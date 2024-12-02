@@ -1,5 +1,5 @@
 const Mongoose = require("mongoose");
-
+//just a simple event model
 const eventSchema = Mongoose.Schema(
     {
         title: {
