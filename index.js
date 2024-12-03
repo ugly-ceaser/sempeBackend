@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(morgan("dev"));
 const corsOptions = {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 };
