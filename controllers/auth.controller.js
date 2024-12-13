@@ -100,19 +100,16 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
+    // Combine user retrieval and verification checks
     const user = await User.findOne({ email });
-    if (!user) {
-        errorResponse(res, 404, "User not found");
+    if (!user || !user.isVerified) {
+        errorResponse(res, 404, user ? 401 : "User not found", "Please verify your email before logging in");
     }
 
     // Verify password using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
         errorResponse(res, 401, "Invalid credentials");
-    }
-
-    if (!user.isVerified) {
-        errorResponse(res, 401, "Please verify your email before logging in");
     }
 
     // Generate both access and refresh tokens
@@ -142,7 +139,10 @@ const login = asyncHandler(async (req, res) => {
 // ACCESS PRIVATE
 
 const requestEmail = asyncHandler(async (req, res) => {
-    const { email, redirect_url } = req.body;
+    let { email, redirect_url } = req.body;
+
+    redirect_url = 'https://www.cicalumni2010.org/api/auth/email/verify';
+
 
     if (!email || !redirect_url) {
         errorResponse(res, 400, "Email and redirect URL are required");
@@ -157,14 +157,13 @@ const requestEmail = asyncHandler(async (req, res) => {
         errorResponse(res, 400, "Email is already verified");
     }
 
-    // Check if previous token hasn't expired yet
     if (user.verificationTokenExpires && user.verificationTokenExpires > Date.now()) {
-        errorResponse(res, 400, "Please wait before requesting a new verification email");
+        console.log("User requested a new verification email before expiration.");
     }
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
     user.verificationToken = verificationToken;
-    user.verificationTokenExpires = Date.now() + 3600000; // 1 hour
+    user.verificationTokenExpires = Date.now() + 3600000; // Reset to 1 hour from now
     await user.save();
 
     const verificationLink = `${redirect_url}?token=${verificationToken}`;
@@ -179,9 +178,12 @@ const requestEmail = asyncHandler(async (req, res) => {
 
     try {
         await sendMail(email, "Verify your Email", message);
+
+        console.log("email sent to ", email);
         return res.status(200).json({
             success: true,
-            message: "Verification link sent successfully"
+            message: "Verification link sent successfully",
+            redirectUrl: "https://www.cicalumni2010.org/email/verified"
         });
     } catch (err) {
         errorResponse(res, 500, "Failed to send verification email");
@@ -209,16 +211,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
     user.verificationTokenExpires = undefined;
     await user.save();
 
-    return res.status(200).json({
-        success: true,
-        message: "Email verified successfully",
-        data: {
-            user: {
-                ...user.toObject(),
-                password: undefined
-            }
-        }
-    });
+    // Redirect to the verification success page
+    return res.redirect(302, "https://www.cicalumni2010.org/email/verified");
 });
 
 // New refresh token endpoint
