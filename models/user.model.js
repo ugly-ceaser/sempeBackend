@@ -42,6 +42,20 @@ const userSchema = Mongoose.Schema(
       required: true,
       minlength: 8,
     },
+    username: {
+      type: String,
+      required: false,
+      unique: true,
+      validate: {
+        validator: async function (value) {
+          if (!value) return true;
+
+          const count = await this.model('User').countDocuments({ username: value });
+          return count === 0;
+        },
+        message: 'Username must be unique.',
+      },
+    },
     verificationToken: {
       type: String,
       default: null,
