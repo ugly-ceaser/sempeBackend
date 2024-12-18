@@ -1,47 +1,110 @@
 const express = require("express");
-const errorHandler = require("../middlewares/errorHandler");
-const Router = require("../routes");
-const _db = require("../configs/db.config");
+const errorHandler = require("./middlewares/errorHandler");
+const Router = require("./routes");
+const _db = require("./configs/db.config");
+require("dotenv").config();
+require("./cronjob");
 const cors = require("cors");
 const morgan = require("morgan");
-const serverless = require("serverless-http");
-
-require("dotenv").config();
-require("../cronjob");
+const path = require("path");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware: Logging
 app.use(morgan("dev"));
 
+// Middleware: CORS Configuration
+const allowedOrigins = ["https://www.cicalumni2010.org"];
 const corsOptions = {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin === "*") {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
 };
 app.use(cors(corsOptions));
+
+// Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
-app.use("/uploads/images", express.static("./uploads/images"));
+// Middleware: Debug Logging (Body and Query Parameters)
+app.use((req, res, next) => {
+    // console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    // console.log("Headers:", req.headers);
+    // console.log("Query Params:", req.query);
+    console.log("Body:", req.body);
+    next();
+});
 
-// Routes
+// Serve Uploaded Images
+app.use("/uploads/images", express.static(path.join(__dirname, "uploads", "images")));
+
+// API Routes
 app.use("/api", Router);
-app.use(errorHandler);
 
-// Handle 404
-app.use((req, res) => {
-    return res.status(404).json({
-        success: false,
-        message: "Route not found",
+// Serve Static Files from Dist Folder
+app.use(express.static(path.join(__dirname, "dist")));
+
+// Route: Email Verified
+app.get("/email/verified", (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Immaculate Conception Alumni</title>
+            <script>
+                alert('Verification is successful!');
+                window.location.href = 'https://www.cicalumni2010.org'; // Redirect to home
+            </script>
+        </head>
+        <body>
+            <h1>Verification Successful</h1>
+            <p>You have successfully verified your account.</p>
+        </body>
+        </html>
+    `);
+});
+
+app.get("/test", (req, res) => {
+    res.send({
+        message: 'server is live'
     });
 });
-
-// Initialize database connection
-_db().then(() => {
-    console.log("Connected to the database");
+// Handle Unmatched Routes
+app.get("*", (req, res) => {
+    if (req.originalUrl.startsWith("/api")) {
+        return res.status(404).json({ message: "API route not found" });
+    }
+    res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-// Export as a serverless function
-module.exports.handler = serverless(app);
+// Middleware: Error Handling
+app.use(errorHandler);
+
+// Initialize Database and Start Server
+_db()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("Failed to connect to the database:", err);
+    });
+
+// Export the Express app as a serverless function
+module.exports = app;
+
+// Vercel requires a default export for serverless functions
+module.exports = (req, res) => {
+    app(req, res);
+};
