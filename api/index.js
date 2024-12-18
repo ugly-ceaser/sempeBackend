@@ -1,9 +1,9 @@
 const express = require("express");
-const errorHandler = require("./middlewares/errorHandler");
-const Router = require("./routes");
-const _db = require("./configs/db.config");
+const errorHandler = require("../middlewares/errorHandler");
+const Router = require("../routes");
+const _db = require("../configs/db.config");
 require("dotenv").config();
-require("./cronjob");
+require("../cronjob");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
