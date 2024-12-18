@@ -15,10 +15,10 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan("dev"));
 
 // Middleware: CORS Configuration
-const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
+const allowedOrigins = ["https://www.cicalumni2010.org"];
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || origin === "*") {
             callback(null, true);
         } else {
             callback(new Error("Not allowed by CORS"));
@@ -74,6 +74,11 @@ app.get("/email/verified", (req, res) => {
     `);
 });
 
+app.get("/test", (req, res) => {
+    res.send({
+        message: 'server is live'
+    });
+});
 // Handle Unmatched Routes
 app.get("*", (req, res) => {
     if (req.originalUrl.startsWith("/api")) {
@@ -95,3 +100,11 @@ _db()
     .catch((err) => {
         console.error("Failed to connect to the database:", err);
     });
+
+// Export the Express app as a serverless function
+module.exports = app;
+
+// Vercel requires a default export for serverless functions
+module.exports = (req, res) => {
+    app(req, res);
+};
