@@ -58,7 +58,7 @@ app.use("/uploads/images", express.static(path.join(__dirname, "..", "uploads", 
 app.use("/api", Router);
 
 // Serve Static Files from Dist Folder
-app.use(express.static(path.join(__dirname, "..", "dist")));
+//app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // Route: Email Verified
 app.get("/email/verified", (req, res) => {
