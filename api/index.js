@@ -1,6 +1,6 @@
 const express = require("express");
 const errorHandler = require("../middlewares/errorHandler");
-const Router = require("../routes");
+const Router = require("../routes/index");
 const _db = require("../configs/db.config");
 require("dotenv").config();
 require("../cronjob");
@@ -15,10 +15,12 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan("dev"));
 
 // Middleware: CORS Configuration
-const allowedOrigins = ["https://www.cicalumni2010.org"];
+const allowedOrigins = ["https://www.cicalumni2010.org", "http://localhost:5173"];
+
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || origin === "*") {
+        // Allow requests with no origin (like from Postman) or from allowed origins
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error("Not allowed by CORS"));
@@ -26,9 +28,15 @@ const corsOptions = {
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    credentials: true, // Allow cookies and credentials
 };
+
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly for all routes
+app.options('*', cors(corsOptions));
+
 
 // Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
@@ -44,13 +52,13 @@ app.use((req, res, next) => {
 });
 
 // Serve Uploaded Images
-app.use("/uploads/images", express.static(path.join(__dirname, "uploads", "images")));
+app.use("/uploads/images", express.static(path.join(__dirname, "..", "uploads", "images")));
 
 // API Routes
 app.use("/api", Router);
 
 // Serve Static Files from Dist Folder
-app.use(express.static(path.join(__dirname, "dist")));
+app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // Route: Email Verified
 app.get("/email/verified", (req, res) => {
