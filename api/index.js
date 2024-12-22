@@ -25,9 +25,10 @@ const corsOptions = {
         }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "api_key"], // Added "api_key"
+    credentials: true, // Allows cookies and credentials to be sent
 };
+
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
