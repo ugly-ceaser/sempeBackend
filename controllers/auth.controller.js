@@ -106,7 +106,7 @@ const login = asyncHandler(async (req, res) => {
 
     // Retrieve user by email only
     const user = await User.findOne({ email });
-    if (!user || !user.isVerified) {
+    if (!user) {
         errorResponse(res, 404, user ? 401 : "User not found", "Please verify your email before logging in");
     }
 
