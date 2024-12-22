@@ -29,6 +29,7 @@ const generateTokens = (userId) => {
 
 const register = asyncHandler(async (req, res) => {
     const {
+        username,
         fullname,
         email,
         password,
@@ -52,10 +53,12 @@ const register = asyncHandler(async (req, res) => {
         errorResponse(res, 400, "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character");
     }
 
-    // Check existing users
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    // Check existing users by username, email, or phone
+    const existingUser = await User.findOne({
+        $or: [{ email }, { phone }, { username }],
+    });
     if (existingUser) {
-        errorResponse(res, 400, existingUser.email === email ? "Email already exists" : "Phone number already exists");
+        errorResponse(res, 400, existingUser.email === email ? "Email already exists" : existingUser.phone === phone ? "Phone number already exists" : "Username already exists");
     }
 
     // Hash password using bcrypt
@@ -63,6 +66,7 @@ const register = asyncHandler(async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await User.create({
+        username,
         fullname,
         email,
         phone,
@@ -100,7 +104,7 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // Combine user retrieval and verification checks
+    // Retrieve user by email only
     const user = await User.findOne({ email });
     if (!user || !user.isVerified) {
         errorResponse(res, 404, user ? 401 : "User not found", "Please verify your email before logging in");
@@ -142,7 +146,6 @@ const requestEmail = asyncHandler(async (req, res) => {
     let { email, redirect_url } = req.body;
 
     redirect_url = 'https://www.cicalumni2010.org/api/auth/email/verify';
-
 
     if (!email || !redirect_url) {
         errorResponse(res, 400, "Email and redirect URL are required");
@@ -281,37 +284,37 @@ const verifyUser = asyncHandler(async (req, res) => {
 // METHOD POST
 // ACCESS PUBLIC
 const forgotPassword = asyncHandler(async (req, res) => {
-    const { email, redirectUrl } = req.body;
+    const { email, username, redirectUrl } = req.body;
 
-    if (!email || !redirectUrl) {
-        errorResponse(res, 400, "Email and redirect URL are required");
+    if (!email && !username || !redirectUrl) {
+        errorResponse(res, 400, "Email/Username and redirect URL are required");
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ $or: [{ email }, { username }] });
     if (!user) {
         errorResponse(res, 404, "User not found");
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetToken = resetToken;
+    user.resetTokenExpires = Date.now() + 3600000; // 1 hour expiration
     await user.save();
 
     const resetLink = `${redirectUrl}?token=${resetToken}`;
     const message = `
-        <h2>Password Reset Request</h2>
+        <h2>Password Reset</h2>
         <p>Hi ${user.fullname},</p>
-        <p>You requested to reset your password. Click the link below to reset it:</p>
+        <p>Click below to reset your password:</p>
         <a href="${resetLink}" target="_blank">Reset Password</a>
         <p>This link will expire in 1 hour.</p>
         <p>If you did not request this, please ignore this email.</p>
     `;
 
     try {
-        await sendMail(email, "Reset Your Password", message);
+        await sendMail(email, "Reset your Password", message);
         return res.status(200).json({
             success: true,
-            message: "Password reset link sent successfully"
+            message: "Password reset link sent successfully",
         });
     } catch (err) {
         errorResponse(res, 500, "Failed to send password reset email");
@@ -321,43 +324,32 @@ const forgotPassword = asyncHandler(async (req, res) => {
 // auth/password/reset
 // METHOD POST
 // ACCESS PUBLIC
+
 const resetPassword = asyncHandler(async (req, res) => {
     const { token, password } = req.body;
 
     if (!token || !password) {
-        errorResponse(res, 400, "Token and new password are required");
+        errorResponse(res, 400, "Token and password are required");
     }
 
-    const user = await User.findOne({
-        resetPasswordToken: token,
-        resetPasswordExpires: { $gt: Date.now() }
-    });
+    const user = await User.findOne({ resetToken: token, resetTokenExpires: { $gt: Date.now() } });
 
     if (!user) {
         errorResponse(res, 404, "Invalid or expired reset token");
     }
 
-    // Validate new password
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-        errorResponse(res, 400, "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character");
-    }
-
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Update user password and clear reset tokens
-    user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    user.password = await bcrypt.hash(password, salt);
+    user.resetToken = undefined;
+    user.resetTokenExpires = undefined;
     await user.save();
 
     return res.status(200).json({
         success: true,
-        message: "Password reset successfully"
+        message: "Password reset successfully",
     });
 });
+
 
 module.exports = {
     register,

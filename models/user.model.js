@@ -2,6 +2,11 @@ const Mongoose = require("mongoose");
 
 const userSchema = Mongoose.Schema(
   {
+    username: {
+      type: String,
+      required: true,
+      unique: true, // Ensure that username is unique
+    },
     fullname: {
       type: String,
       required: true,
@@ -41,11 +46,6 @@ const userSchema = Mongoose.Schema(
       type: String,
       required: true,
       minlength: 8,
-    },
-    username: {
-      type: String,
-      required: false,
-   
     },
     verificationToken: {
       type: String,
