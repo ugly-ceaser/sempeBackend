@@ -97,6 +97,7 @@ const userSchema = Mongoose.Schema(
   },
   {
     timestamps: true,
+    validateModifiedOnly: true,
   }
 );
 
