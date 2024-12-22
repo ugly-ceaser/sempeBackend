@@ -103,40 +103,41 @@ const register = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-
-    // Retrieve user by email only
+  
+  
     const user = await User.findOne({ email });
     if (!user) {
-        errorResponse(res, 404, user ? 401 : "User not found", "Please verify your email before logging in");
+      return errorResponse(res, 404, "User not found", "Please verify your email before logging in");
     }
-
+  
     // Verify password using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-        errorResponse(res, 401, "Invalid credentials");
+      return errorResponse(res, 401, "Invalid credentials");
     }
-
+  
     // Generate both access and refresh tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
-
+  
     // Save refresh token to user document
     user.refreshToken = refreshToken;
     await user.save();
-
+  
     const userObj = user.toObject();
     delete userObj.password;
     delete userObj.refreshToken;
-
+  
     return res.status(200).json({
-        success: true,
-        message: "Logged in successfully",
-        data: { 
-            user: userObj,
-            accessToken,
-            refreshToken
-        },
+      success: true,
+      message: "Logged in successfully",
+      data: { 
+        user: userObj,
+        accessToken,
+        refreshToken,
+      },
     });
-});
+  });
+  
 
 // auth/email/request
 // METHOD POST
