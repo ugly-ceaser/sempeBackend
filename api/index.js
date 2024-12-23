@@ -14,24 +14,16 @@ const PORT = process.env.PORT || 3000;
 // Middleware: Logging
 app.use(morgan("dev"));
 
-const allowedOrigins = ["https://cicalumni2010.org"];
-
+// Unrestricted CORS Configuration
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
+    origin: "*", // Allows requests from any origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "api_key"], // Added "api_key"
-    credentials: true, // Allows cookies and credentials to be sent
+    credentials: false, // Disables sending cookies or credentials
 };
 
-
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions)); // Enables preflight requests for all routes
 
 // Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
@@ -39,9 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware: Debug Logging (Body and Query Parameters)
 app.use((req, res, next) => {
-    // console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    // console.log("Headers:", req.headers);
-    // console.log("Query Params:", req.query);
     console.log("Body:", req.body);
     next();
 });
@@ -51,9 +40,6 @@ app.use("/uploads/images", express.static(path.join(__dirname, "..", "uploads", 
 
 // API Routes
 app.use("/api", Router);
-
-// Serve Static Files from Dist Folder
-//app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // Route: Email Verified
 app.get("/email/verified", (req, res) => {
@@ -76,18 +62,17 @@ app.get("/email/verified", (req, res) => {
         </html>
     `);
 });
-//workin
+
+// Test Route
 app.get("/test", (req, res) => {
     res.send({
-        message: 'server is live'
+        message: "server is live",
     });
 });
+
 // Handle Unmatched Routes
 app.get("*", (req, res) => {
-    // Handle unmatched routes
     res.status(404).json({ message: "Route not found" });
-    // Optionally, you can uncomment the line below to serve a static file instead
-    // res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 // Middleware: Error Handling
