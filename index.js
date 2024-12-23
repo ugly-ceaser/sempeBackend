@@ -77,10 +77,7 @@ app.get("/test", (req, res) => {
 });
 // Handle Unmatched Routes
 app.get("*", (req, res) => {
-    if (req.originalUrl.startsWith("/api")) {
-        return res.status(404).json({ message: "API route not found" });
-    }
-    res.sendFile(path.join(__dirname, "dist", "index.html"));
+    res.status(404).json({ message: "Route not found" });
 });
 
 // Middleware: Error Handling
