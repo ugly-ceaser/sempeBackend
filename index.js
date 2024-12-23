@@ -16,21 +16,15 @@ app.use(morgan("dev"));
 
 // Middleware: CORS Configuration
 
-const allowedOrigins = ["http://localhost:5173"];
-
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
+    origin: "*", // Allows requests from any origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "api_key"], // Added "api_key"
-    credentials: true, // Allows cookies and credentials to be sent
+    credentials: false, // Disables sending cookies or credentials
 };
+
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Enables preflight requests for all routes
 
 // Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
