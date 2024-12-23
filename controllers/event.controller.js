@@ -178,6 +178,8 @@ const updateEvent = asyncHandler(async (req, res) => {
 const deleteEvent = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
+    console.log(eventId)
+
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
         return res.status(400).json({
             success: false,

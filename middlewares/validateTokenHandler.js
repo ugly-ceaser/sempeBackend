@@ -10,6 +10,8 @@ const validateToken = asyncHandler(async (req, res, next) => {
         });
     }
     const token = authHeader.split(" ")[1];
+    
+    // Verify token
     const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET,
@@ -19,20 +21,27 @@ const validateToken = asyncHandler(async (req, res, next) => {
                 throw new Error("Invalid token");
             }
             return decoded;
-        },
+        }
     );
+    
+    // Find the user based on the decoded token
     const user = await User.findById(decoded.id);
     if (!user) {
         return res.status(403).json({
             message: "Unauthorized Access",
         });
     }
+    
+    // Check if user is active
     if (!user.isActive) {
         return res.status(403).json({
-            message: "This account is not active please contact administrators",
+            message: "This account is not active, please contact administrators",
         });
     }
-    req.validatedUserId = decoded;
+    
+    // Attach user to req object so it can be accessed in the controller
+    req.user = user; // Add the user to the request object
+    
     next();
 });
 

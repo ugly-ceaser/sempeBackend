@@ -8,7 +8,8 @@ const {
     verifyUser,
     refreshToken,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    changePassword
 } = require("../controllers/auth.controller");
 
 const validateToken = require("../middlewares/validateTokenHandler");
@@ -47,6 +48,7 @@ authRoute.post("/refresh-token",
 
 authRoute.post('/password/forgot', forgotPassword);
 authRoute.post('/password/reset', resetPassword); 
+authRoute.put('/change-password',validateToken,changePassword)
 
 
 module.exports = authRoute;

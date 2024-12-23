@@ -351,6 +351,31 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+    const id = req.user._id;  // User ID from the validated token
+    const newPassword = req.body.password;  // New password from request body
+
+    // Find the user by ID
+    const user = await User.findById(id);
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10); // Generate salt
+    const hashedPassword = await bcrypt.hash(newPassword, salt); // Hash the new password
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await user.save();
+
+    // Respond with a success message
+    return res.status(200).json({
+        message: "Password is changed successfully",
+        data: { user: { email: user.email } },  // You can send the email or any other user details as needed
+    });
+});
+
 
 module.exports = {
     register,
@@ -360,5 +385,6 @@ module.exports = {
     refreshToken,
     verifyUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    changePassword
 };
