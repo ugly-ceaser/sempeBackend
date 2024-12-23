@@ -14,16 +14,27 @@ const PORT = process.env.PORT || 3000;
 // Middleware: Logging
 app.use(morgan("dev"));
 
-// Unrestricted CORS Configuration
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://www.cicalumni2010.org"
+];
+
 const corsOptions = {
-    origin: "*", // Allows requests from any origin
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "api_key"], // Added "api_key"
-    credentials: false, // Disables sending cookies or credentials
+    allowedHeaders: ["Content-Type", "Authorization", "api_key"],
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Enables preflight requests for all routes
+app.options("*", cors(corsOptions)); 
 
 // Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
@@ -31,6 +42,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware: Debug Logging (Body and Query Parameters)
 app.use((req, res, next) => {
+    // console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    // console.log("Headers:", req.headers);
+    // console.log("Query Params:", req.query);
     console.log("Body:", req.body);
     next();
 });
@@ -40,6 +54,9 @@ app.use("/uploads/images", express.static(path.join(__dirname, "..", "uploads", 
 
 // API Routes
 app.use("/api", Router);
+
+// Serve Static Files from Dist Folder
+//app.use(express.static(path.join(__dirname, "..", "dist")));
 
 // Route: Email Verified
 app.get("/email/verified", (req, res) => {
@@ -62,17 +79,18 @@ app.get("/email/verified", (req, res) => {
         </html>
     `);
 });
-
-// Test Route
+//workin
 app.get("/test", (req, res) => {
     res.send({
-        message: "server is live",
+        message: 'server is live'
     });
 });
-
 // Handle Unmatched Routes
 app.get("*", (req, res) => {
+    // Handle unmatched routes
     res.status(404).json({ message: "Route not found" });
+    // Optionally, you can uncomment the line below to serve a static file instead
+    // res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 // Middleware: Error Handling
