@@ -71,11 +71,52 @@ const deleteUser = asyncHandler(async (req, res) => {
 });
 
 
+/**
+ * Admin function to verify a user.
+ * Endpoint: POST /users/:userId/verify
+ * Access: Admin only
+ */
+const adminVerifyUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid user ID format",
+        });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    // Set user as verified
+    user.isVerified = true;
+    await user.save();
+
+    return res.status(200).json({
+        success: true,
+        message: "User verified successfully",
+        data: {
+            id: user.id,
+            username: user.username,
+            fullname: user.fullname,
+            email: user.email,
+            isVerified: user.isVerified,
+        },
+    });
+});
+
+
 
 
 
 module.exports = {
     adminActivateOrDeactivateUser,
     deleteUser,
+    adminVerifyUser
    
 };  

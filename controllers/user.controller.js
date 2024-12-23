@@ -179,8 +179,12 @@ const getApprovedUsers = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query; // Default to page 1 and limit 10 if not provided
 
     try {
-        // Fetch users with pagination and profileApproved = true
-        const users = await User.find({ profileApproved: true })
+        // Fetch users with pagination and profileApproved = true, excluding sensitive fields
+        const users = await User.find({ 
+            profileApproved: true, 
+            profileImg: { $ne: null, $ne: "" } // Check for not null and not empty string
+        })
+            .select("-password -verificationToken -isVerified -isAdmin -isActive -refreshToken -verificationTokenExpires -resetPasswordToken -resetPasswordExpires") // Exclude sensitive fields
             .skip((page - 1) * limit) // Skipping users based on page and limit
             .limit(parseInt(limit)); // Limiting the number of users
 
@@ -220,6 +224,7 @@ const getApprovedUsers = asyncHandler(async (req, res) => {
         });
     }
 });
+
 
 module.exports = {
     getAllUsers,
