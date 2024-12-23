@@ -15,16 +15,27 @@ const PORT = process.env.PORT || 3000;
 app.use(morgan("dev"));
 
 // Middleware: CORS Configuration
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://www.cicalumni2010.org"
+];
 
 const corsOptions = {
-    origin: "*", // Allows requests from any origin
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "api_key"], // Added "api_key"
-    credentials: false, // Disables sending cookies or credentials
+    allowedHeaders: ["Content-Type", "Authorization", "api_key"],
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Enables preflight requests for all routes
+app.options("*", cors(corsOptions)); 
 
 // Middleware: JSON and URL-encoded Parsing
 app.use(express.json());
